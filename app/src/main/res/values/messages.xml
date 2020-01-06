@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="network_not_connected">Network connection failed, please check the network Settings</string>
+    <string name="xml_parser_failed">Abnormal data parsing</string>
+    <string name="io_exception_error">Document flow anomalies</string>
+    <string name="http_status_code_error">Network anomalies, error code：%d</string>
+    <string name="http_exception_error">Network anomalies, request timeout</string>
+    <string name="socket_exception_error">Network anomalies, read data timeout</string>
+    <string name="app_run_code_error">Application runtime exception</string>
+
+    <string name="app_menu_surelogout">Determine the exit?</string>
+    <string name="sure">OK</string>
+    <string name="cancle">Cancel</string>
+
+    <string name="app_error">App Error</string>
+    <string name="app_error_message">I am very sorry, application error, the exit \n Please submit a bug report, we will fix the problem as soon as possible</string>
+
+    <string name="select">选择</string>
+
+    <!-- LoginSina -->
+
+    <!-- sina share message -->
+
+</resources>

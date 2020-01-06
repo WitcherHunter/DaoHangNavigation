@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray">#808080</color>
+    <color name="red">#FF0000</color>
+    <color name="green">#008000</color>
+    <color name="blue">#0000FF</color>
+
+
+    <!--zxing start-->
+
+    <!--zxing end-->
+
+    <!-- Web colors -->
+    <color name="WHITE">#ffffffff</color>
+    <color name="BLUE">#ff0000ff</color>
+    <color name="color_check_train_list">#444444</color>
+
+    <!-- navi color -->
+    <color name="gray_F4F6F7">#F4F6F7</color>
+    <color name="white_ffffff">#ffffff</color>
+    <color name="gray_8A8A8A">#8A8A8A</color>
+    <color name="blue_41C7D6">#41C7D6</color>
+    <color name="blue_1296DB">#1296DB</color>
+    <color name="blue_3BDAD0">#3BDAD0</color>
+    <color name="blue_87A7D6">#87A7D6</color>
+    <color name="green_4BC116">#4BC116</color>
+    <color name="green_3BDAD0">#3BDAD0</color>
+    <color name="orange_EF7011">#EF7011</color>
+    <color name="orange_FFBF6F">#FFBF6F</color>
+    <color name="orange_F4EA2A">#F4EA2A</color>
+    <color name="black_43413A">#43413A</color>
+
+</resources>

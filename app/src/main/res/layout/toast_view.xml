@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/ivory_toast_text"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#f8f690"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="你没有权限"
+        android:textColor="#e5a629"
+        android:textSize="14sp" />
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="1px"
+        android:background="#dddddd" />
+</LinearLayout>

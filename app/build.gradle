@@ -1,0 +1,107 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.greenrobot.greendao'
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        applicationId "com.navigation.timerterminal"
+        multiDexEnabled true
+        minSdkVersion 19
+        targetSdkVersion 26
+        versionCode 15
+        versionName "1.1.1.191122_DH_CD"
+//        externalNativeBuild {
+//            cmake {
+//                cppFlags ""
+//            }
+//        }
+    }
+
+//    externalNativeBuild {
+//        cmake {
+//            path "CMakeLists.txt"
+//        }
+//    }
+    signingConfigs {
+        config {
+            keyAlias "android"
+            keyPassword "android"
+            storeFile file('/Users/maodou/导航项目/交接/SignFiles/platform.jks')
+            storePassword "android"
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
+        }
+        debug {
+            signingConfig signingConfigs.config
+            debuggable true
+            jniDebuggable false
+        }
+    }
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDir 'src/main/libs'
+            jni.srcDirs = []
+        }
+    }
+    lintOptions {
+        disable 'LongLogTag'
+        abortOnError false
+    }
+    productFlavors {
+//        arm7 {
+//            // in the future, ndk.abiFilter might also work
+//            ndk {
+//                abiFilter 'armeabi-v7a'
+//            }
+//        }
+    }
+    dexOptions {
+        jumboMode true
+        javaMaxHeapSize "2g"
+    }
+}
+dependencies {
+    //    debugCompile 'com.squareup.leakcanary:leakcanary-android:1.6.1'
+    implementation files('libs/Msc.jar')
+    implementation files('libs/LogCather.jar')
+    implementation files('libs/universal-image-loader-1.9.3.jar')
+    implementation files('libs/usc.jar')
+    implementation files('libs/glide-3.7.0.jar')
+    implementation files('libs/commons-collections-3.2.jar')
+    implementation files('libs/commons-httpclient-3.1.jar')
+    implementation files('libs/DuiLite.jar')
+    //    compile files('libs/commons-lang-2.3.jar')
+    implementation files('libs/commons-net-3.5.jar')
+    implementation files('libs/gson-2.2.2.jar')
+    implementation files('libs/json-lib-2.2.2-jdk15.jar')
+    implementation files('libs/bcprov-jdk15-143.jar')
+    implementation files('libs/eventbus.jar')
+    implementation files('libs/cw-deviceapi.jar')
+    implementation files('libs/commons-lang-2.3.jar')
+    implementation files('libs/mina-core-2.0.7.jar')
+    implementation files('libs/serenegiant.jar')
+    implementation 'com.github.kongqw:AndroidSerialPort:1.0.1'
+    implementation 'com.android.support:multidex:1.0.1'
+    implementation 'com.google.android.gms:play-services-appindexing:8.4.0'
+    implementation 'com.squareup.okhttp:okhttp:2.4.0'
+    implementation 'com.squareup.okio:okio:1.5.0'
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation 'com.amap.api:location:4.6.0'
+    implementation 'com.amap.api:3dmap:6.8.0'
+    implementation 'org.greenrobot:greendao:3.2.2'
+
+    //友盟插件
+    implementation  'com.umeng.umsdk:analytics:7.5.4'
+    implementation  'com.umeng.umsdk:common:1.5.4'
+}

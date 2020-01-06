@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.navigation.timerterminal"
+    android:process="com.android.phone"
+    android:sharedUserId="android.uid.system">
+
+    <!-- 以下是使用wifi关闭当前程序 -->
+    <!-- 以下是使用wifi关闭当前程序 -->
+    <!-- 使用参数设置 -->
+    <original-package android:name="com.android.settings" />
+    <!-- 创建桌面图标 -->
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
+    <!-- 解锁的权限 -->
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.RESTART_PACKAGES" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- 亮屏的权限 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.BATTERY_STATS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
+    <uses-permission android:name="android.permission.ACCESS_FIND_LOCATION" />
+    <!-- <uses-permission android:name="android.permission.SET_TIME" /> -->
+    <!-- <uses-permission android:name="android.permission.WRITE_MEDIA_STORAGE" /> -->
+    <!-- 这个权限用于进行网络定位 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- 这个权限用于访问GPS定位 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- 用于访问wifi网络信息，wifi信息会用于进行网络定位 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- 获取运营商信息，用于支持提供运营商信息相关的接口 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 这个权限用于获取wifi的获取权限，wifi信息会用来进行网络定位 -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- 用于读取手机当前的状态 -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!-- 写入扩展存储，向扩展卡写入数据，用于写入离线定位数据 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- 访问网络，网络定位需要上网 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- SD卡读取权限，用户写入离线定位数据 -->
+    <uses-permission android:name="android.permission.USB_PERMISSION" />
+    <!-- 在SDCard中创建与删除文件权限 -->
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true" />
+
+    <!-- To auto-complete the email text field in the login form with the user's emails -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.READ_PROFILE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- android:name="android.support.multidex.MultiDexApplication" -->
+    <application
+        android:name="com.serenegiant.AppContext"
+        android:allowBackup="false"
+        android:hardwareAccelerated="true"
+        android:icon="@drawable/chainway_logo_mini"
+        android:label="@string/chainwayapp_name"
+        android:largeHeap="true"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.NoTitleBar"
+        tools:replace="android:label,android:allowBackup">
+
+        <activity
+            android:name="com.serenegiant.ui.SetActivity"
+            android:alwaysRetainTaskState="true"
+            android:configChanges="keyboardHidden|orientation|mnc|mcc"
+            android:icon="@drawable/chainway_logo_mini"
+            android:label="导航学车"
+            android:screenOrientation="landscape"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.MONKEY" />
+            </intent-filter>
+        </activity>
+
+        <!--<activity android:name="com.serenegiant.ui.SetActivity"-->
+            <!--android:screenOrientation="landscape"-->
+            <!--android:launchMode="singleTask"-->
+            <!--android:theme="@android:style/Theme.NoTitleBar.Fullscreen"-->
+            <!--android:configChanges="keyboardHidden|orientation"/>-->
+
+        <activity
+            android:name="com.serenegiant.ui.RainingActivity"
+            android:icon="@drawable/ic_stub"
+            android:label="计时仪-正在培训"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+        <activity
+            android:name="com.serenegiant.ui.AutomaticDetectionActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:icon="@drawable/chainway_logo_mini"
+            android:label="计时仪-设置"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="8ee46d0e4d164e9a8b3440eba2f348d3" />
+
+        <service android:name="com.amap.api.location.APSService" />
+        <service android:name="com.serenegiant.services.LocationService" />
+        <service android:name="com.serenegiant.services.BDGPSService" />
+
+        <!--
+     ATTENTION: This was auto-generated to add Google Play services to your project for
+     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.
+        -->
+        <!-- <meta-data -->
+        <!-- android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" -->
+        <!-- android:resource="@xml/device_filter" /> -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <!-- <activity android:name="com.foctts.instance.SettingTTSActivity"></activity> -->
+        <service android:name="com.serenegiant.services.SendPositionService" />
+        <!-- <service android:name="com.serenegiant.services.SendTrainingLogService"></service> -->
+        <service android:name="com.serenegiant.net.ConnectService" />
+
+        <receiver android:name="com.serenegiant.net.AlarmReceiver" />
+        <!--<receiver android:name="com.serenegiant.services.NetworkChangeReceiver"/>-->
+
+        <activity
+            android:name="com.serenegiant.ui.SetChangeActivity"
+            android:alwaysRetainTaskState="true"
+            android:configChanges="keyboardHidden|orientation"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+        <activity
+            android:screenOrientation="landscape"
+            android:name="com.serenegiant.ui.SetSystemActivity"
+            android:label="@string/title_activity_set__system_"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+        <activity
+            android:screenOrientation="landscape"
+            android:name="com.serenegiant.ui.SetSecketActivity"
+            android:label="@string/title_activity_set_secket"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+        <activity
+            android:screenOrientation="landscape"
+            android:name="com.serenegiant.ui.SetDaoHangActivity"
+            android:label="@string/title_activity_set_dao_hang"
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+        <activity android:name="com.serenegiant.ui.TrainActivity"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateHidden"/>
+
+    </application>
+
+</manifest>

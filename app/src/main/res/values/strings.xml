@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">CWJ</string>
+    <string name="chainwayapp_name">导航学车</string>
+    <string name="msg_network_unavailable">Network unavailable</string>
+    <string name="close">Close</string>
+
+    <!-- BTPrinterDemo -->
+
+    <!-- DeviceListActivity -->
+
+    <!-- inventorytag -->
+
+    <!-- read -->
+
+
+    <!-- power -->
+
+    <!-- chooseuii -->
+
+    <!-- getuiiforoperation -->
+
+    <!-- datalist -->
+
+    <!-- datalist_items -->
+
+    <!-- write -->
+
+    <!-- lock -->
+
+    <!-- killtag -->
+
+    <!-- select -->
+
+    <!-- frequency -->
+
+
+    <string name="gps_title_tip">Message</string>
+    <string name="gps_msg_gps_not_open">GPS is not open, whether to open?</string>
+    <string name="gps_btn_yes">YES</string>
+    <string name="gps_btn_no">NO</string>
+
+
+    <!-- zxing star -->
+
+    <!-- zxing end -->
+
+
+    <!-- TODO: Remove or change this placeholder text -->
+
+
+    <string name="descr_image">image</string>
+    <string name="serverurl">http://14.17.70.139:1800/version.xml</string>
+    <string name="request_down_server">http://192.168.100.7:8000/Start</string>
+    <string name="start_down_server">http://192.168.100.7:8000/release.apk</string>
+    <string name="finish_down_server">http://192.168.100.7:8000/DownloadComplete</string>
+
+    <!-- Strings related to login -->
+    <string name="title_activity_set__system_">Set_System_Activity</string>
+    <string name="title_activity_set_secket">SetSecketActivity</string>
+    <string name="title_activity_set_dao_hang">SetDaoHangActivity</string>
+
+
+    <string name="car_number">车牌号码: </string>
+    <string name="train_part">培训部分: </string>
+
+    <string name="train_time">本次时长: </string>
+    <string name="total_time">累计时长: </string>
+    <string name="train_miles">训练里程: 0.00km</string>
+
+    <string name="latitude">经度: </string>
+    <string name="longitude">纬度: </string>
+
+    <string name="current_speed">当前车速: 0km/h</string>
+
+    <string name="student">学员</string>
+    <string name="coach">教练</string>
+
+    <string-array name="locationTypes">
+        <item>定位失败</item>
+        <item>GPS定位结果</item>
+        <item>前次定位结果</item>
+        <item>无</item>
+        <item>缓存定位结果</item>
+        <item>Wifi定位结果</item>
+        <item>基站定位结果</item>
+        <item>无</item>
+        <item>离线定位结果</item>
+        <item>最后位置缓存</item>
+    </string-array>
+
+</resources>
