@@ -1,6 +1,7 @@
 package com.serenegiant.ui;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -236,6 +237,7 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
 
     private int startMiles;
 
+    @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -628,8 +630,9 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
     }
 
     @Override
-    public void onReadSuccess(CardInfo cardInfo, RFID.CardType cardType) {
-        handleCard(cardInfo, cardType);
+    public void onReadSuccess(long uid) {
+
+//        handleCard(cardInfo, cardType);
     }
 
     /**
@@ -704,7 +707,7 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                     public void onResponse(Response response) throws IOException {
                         try {
                             FaceVerifyResponse data = new Gson().fromJson(response.body().string(), FaceVerifyResponse.class);
-                            if (data.getErrorcode() == 0) {
+                            if (data.getSuccess()) {
                                 Log.e("TrainActivity", "接口调用成功：" + new SimpleDateFormat("yyMMdd HH:mm:ss").format(new Date()));
                                 if (actionType == COACH_LOGIN_FACE) {
                                     play("教练员签到成功，请学员刷卡签到", 200);
@@ -1422,74 +1425,6 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
         info.setCourse(StringUtils.HexStringToBytes(CommonInfo.getCourseCode()));
         info.setGpsDate(CommonInfo.getGpsData());
         Insert_DB.getInstance().insertLearner_Login(info);
-
-        if (type == 1) {
-            boolean writeSuccess = mRfid.writeCard(1232, new byte[]{(byte) 1});
-        } else {
-//            if (mRfid.getCardState() == 0) {
-//                toast("学员已在其他设备签退");
-//                return;
-//            }
-
-            boolean writeSuccess = mRfid.writeCard(1232, new byte[]{(byte) 0});
-            writeCard(time);
-        }
-    }
-
-    private void writeCard(int time) {
-
-        int index = 0;
-
-        data = new byte[48];
-        data[index] = (byte) (0 & 0xFF);//状态 0
-
-        if (practiceTime != 0)
-            index = intToBytes2(mStudentCardInfo.getPracticeTime() + time, data, 1);
-        else
-            index = intToBytes2(time, data, 1);
-
-        index = shortToBytes2((short) (mStudentCardInfo.getCheckInTimes() + 1), data, index);//签到次数加 1
-        index = intToBytes2(mStudentCardInfo.getSubjectOneLearnedTime(), data, index);//
-        if (CommonInfo.curItem == 2) {
-            index = intToBytes2(mStudentCardInfo.getSubjectTwoLearnedTime() + time, data, index);   //三舍四入 为学员多加1米
-            index = intToBytes2(mStudentCardInfo.getSubjectTwoLearnedMiles() + MilesCalculateUtil.calculateDistance(mStudentCardInfo.getCarType(), (byte) 2, time), data, index);
-            index = intToBytes2(mStudentCardInfo.getSubjectThreeLearnedTime(), data, index);
-            index = intToBytes2(mStudentCardInfo.getSubjectThreeLearnedMiles(), data, index);
-        } else {
-            index = intToBytes2(mStudentCardInfo.getSubjectTwoLearnedTime(), data, index);
-            index = intToBytes2(mStudentCardInfo.getSubjectTwoLearnedMiles(), data, index);
-            index = intToBytes2(mStudentCardInfo.getSubjectThreeLearnedTime() + time, data, index);
-            index = intToBytes2(mStudentCardInfo.getSubjectThreeLearnedMiles() + MilesCalculateUtil.calculateDistance(mStudentCardInfo.getCarType(), (byte) 3, time), data, index);
-        }
-        index = intToBytes2(mStudentCardInfo.getSubjectFourLearnedTime(), data, index);
-        System.arraycopy(mStudentCardInfo.getVirtualCurrency(), 0, data, index, 4);
-        index = index + 4;
-
-        String date = new SimpleDateFormat("yyMMdd").format(new Date());
-        byte[] dateBytes = RFID.str2Bcd(date);
-        System.arraycopy(dateBytes, 0, data, index, dateBytes.length);
-
-        boolean writeSuccess = mRfid.writeCard(1232, data);
-    }
-
-    /**
-     * 将int数值转换为占四个字节的byte数组，本方法适用于(高位在前，低位在后)的顺序。  和bytesToInt2（）配套使用
-     */
-    public int intToBytes2(int value, byte[] src, int index) {
-        data[index++] = (byte) ((value >> 24) & 0xFF);
-        data[index++] = (byte) ((value >> 16) & 0xFF);
-        data[index++] = (byte) ((value >> 8) & 0xFF);
-        data[index++] = (byte) (value & 0xFF);
-        return index;
-    }
-
-    /**
-     * 将short数值转换为占四个字节的byte数组，本方法适用于(高位在前，低位在后)的顺序。  和bytesToInt2（）配套使用
-     */
-    public int shortToBytes2(short value, byte[] src, int index) {
-        data[index++] = (byte) ((value >> 8) & 0xFF);
-        data[index++] = (byte) (value & 0xFF);
-        return index;
     }
 
     /**

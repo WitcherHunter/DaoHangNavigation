@@ -1,6 +1,7 @@
 package com.serenegiant.rfid;
 
 import com.serenegiant.AppContext;
+import com.serenegiant.utils.HexUtil;
 
 public class RfidThread extends Thread {
     private OnCardCheckedListener mListener;
@@ -15,43 +16,20 @@ public class RfidThread extends Thread {
     public void run() {
         AppContext.Stopped = false;
         while (!AppContext.Stopped) {
-            byte type;
-            byte[] id = null;
-            CardInfo cardInfo = null;
-            RFID.CardType cardType = RFID.CardType.UnKnown;
+            byte[] id = new byte[4];
 
             AppContext.Stopped = false;
             while (!AppContext.Stopped) {
                 if (mRfid.checkCard()){
-                    type = mRfid.readCardType();
-                    //身份证
-                    if (type == (byte) 4 && mRfid.readIdFromCard() != null){
-                        id = mRfid.readIdFromCard();
-//                    mListener.onReadIdentificationCardSuccess(mRfid.readIdFromCard());
+                    byte[] result  = mRfid.readIdFromCard();
+                    if (result.length > 4) {
+                        System.arraycopy(result, 0, id, 0, id.length);
                         AppContext.Stopped = true;
-                        break;
-                    }
-                    //其他类型卡
-                    else {
-                        cardInfo = mRfid.getCardInfo();
-                        cardType = cardInfo.getCardType();
 
-                        if (cardType != RFID.CardType.UnKnown && cardType != null && mListener != null) {
-                            AppContext.Stopped = true;
-                            break;
-                        }
-                    }
-
-                    try {
-                        sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        mListener.onReadSuccess(HexUtil.convertUidToLong(id));
                     }
                 }
             }
-
-            if (cardInfo != null && cardType != RFID.CardType.UnKnown && mListener != null)
-                mListener.onReadSuccess(cardInfo, cardType);
         }
     }
 }

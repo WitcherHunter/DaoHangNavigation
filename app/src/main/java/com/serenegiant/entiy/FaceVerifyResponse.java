@@ -1,33 +1,23 @@
 package com.serenegiant.entiy;
 
 public class FaceVerifyResponse {
-    private int errorcode;
+    private Boolean success = false;
 
-    private String message;
+    private int result;
 
-    private Object data;
-
-    public int getErrorcode() {
-        return errorcode;
+    public Boolean getSuccess() {
+        return success;
     }
 
-    public void setErrorcode(int errorcode) {
-        this.errorcode = errorcode;
+    public void setSuccess(Boolean success) {
+        this.success = success;
     }
 
-    public String getMessage() {
-        return message;
+    public int getResult() {
+        return result;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public Object getData() {
-        return data;
-    }
-
-    public void setData(Object data) {
-        this.data = data;
+    public void setResult(int result) {
+        this.result = result;
     }
 }
