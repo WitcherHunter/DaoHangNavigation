@@ -32,10 +32,9 @@ import com.google.gson.Gson;
 import com.navigation.timerterminal.R;
 import com.serenegiant.AppConfig;
 import com.serenegiant.AppContext;
-import com.serenegiant.business.obd.OBDAPI;
-import com.serenegiant.constants.CourseCodeGenerator;
 import com.serenegiant.dataFormat.PhotoPrintInfo;
 import com.serenegiant.db.Insert_DB;
+import com.serenegiant.entiy.CoachInfo;
 import com.serenegiant.entiy.CoachLoginInfo;
 import com.serenegiant.entiy.FaceVerifyRequest;
 import com.serenegiant.entiy.FaceVerifyResponse;
@@ -44,13 +43,13 @@ import com.serenegiant.entiy.MinuteRecord;
 import com.serenegiant.entiy.MinuteRecordDao;
 import com.serenegiant.entiy.ObdDataModel;
 import com.serenegiant.entiy.PhotoHeadInformation;
+import com.serenegiant.entiy.StudentAndCoachInfoRequest;
+import com.serenegiant.entiy.StudentInfo;
 import com.serenegiant.entiy.StudentLoginInfo;
 import com.serenegiant.entiy.TrainingRecord;
-import com.serenegiant.entiy.WarningFlag;
 import com.serenegiant.http.HttpConfig;
 import com.serenegiant.net.CommonInfo;
 import com.serenegiant.net.DeviceParameter;
-import com.serenegiant.net.ObdRunningData;
 import com.serenegiant.rfid.CardInfo;
 import com.serenegiant.rfid.OnCardCheckedListener;
 import com.serenegiant.rfid.RFID;
@@ -89,16 +88,14 @@ import static com.serenegiant.entiy.PracticeEvent.FINGER_MATCH_FAIL;
 import static com.serenegiant.entiy.PracticeEvent.START_TRAIN;
 import static com.serenegiant.entiy.PracticeEvent.STUDENT_EXIT_SUCCESS;
 import static com.serenegiant.entiy.PracticeEvent.TIMEOUT;
-import static com.serenegiant.ui.SetDaoHangActivity.MODE_FACE;
 import static com.serenegiant.ui.SetDaoHangActivity.MODE_NONE;
-import static com.serenegiant.ui.SetDaoHangActivity.VERIFY_MODE;
 
 public class TrainActivity extends BaseActivity implements OnCardCheckedListener {
     public static final int FLAG_HOMEKEY_DISPATCHED = 0x80000000;
 
     public static final int LOGIN = 1;
     public static final int LOGOUT = 2;
-    private int verifyMode;
+    private int verifyMode = MODE_NONE;
 
     public static final int COACH_LOGIN_FACE = 1;
     public static final int STUDENT_LOGIN_FACE = 2;
@@ -226,10 +223,6 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
     //本次学习时间（异常关机后记录，重启后恢复）
     private int learnedTimeBeforeShutdown;
 
-    //卡内读取的指纹数据
-    private byte[] finger1;
-    private byte[] finger2;
-
     private AlertDialog mTimeOutDialog;
 
     //培训开始时obd数据中的累积里程
@@ -250,15 +243,10 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                     break;
                 case START_TRAIN:
                     mTvEnd.setVisibility(View.INVISIBLE);
-//                    mTimer.setBase(SystemClock.elapsedRealtime());
                     if (record != null)
                         mTimer.setBase(SystemClock.elapsedRealtime() - learnedTimeBeforeShutdown * 60 * 1000);
                     else
                         mTimer.setBase(SystemClock.elapsedRealtime());
-//                    System.out.println("time is " + learnedTimeBeforeShutdown);
-//                    int hour = (int) ((SystemClock.elapsedRealtime() - mTimer.getBase()) / 1000 / 60);
-//                    System.out.println("hour is " + hour);
-//                    mTimer.setFormat("0" + String.valueOf(hour) + ":%s");
                     mTimer.start();
 
                     mBtnStudentExit.setVisibility(View.VISIBLE);
@@ -343,7 +331,7 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
         mClient.setReadTimeout(10000, TimeUnit.MILLISECONDS);
         mClient.setConnectTimeout(10000, TimeUnit.MILLISECONDS);
 
-        verifyMode = getSharedPreferences("VerifyMode", MODE_PRIVATE).getInt(VERIFY_MODE, MODE_NONE);
+//        verifyMode = getSharedPreferences("VerifyMode", MODE_PRIVATE).getInt(VERIFY_MODE, MODE_NONE);
 //        verifyMode = MODE_NONE;
 
         initPermissions();
@@ -421,7 +409,7 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                                     mTimeOutTask.cancel();
 
                                 shutdownTimeout = true;
-                                stopTrain(true);
+                                stopTrain();
                                 mHandler.sendEmptyMessage(STUDENT_EXIT_SUCCESS);
 
                                 mState = TrainState.STUDENT_LOGIN;
@@ -631,8 +619,118 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
 
     @Override
     public void onReadSuccess(long uid) {
+        if (mState == TrainState.STUDENT_LOGIN) {
+            getStudentInfo(uid);
+        } else if (mState == TrainState.COACH_LOGIN) {
+            getCoachInfo(uid);
+        } else if (mState == TrainState.COACH_EXIT) {
+            CardInfo info = new CardInfo();
+            info.setUid(uid);
+            handleCard(info, RFID.CardType.CommonCoachCard);
+        } else if (mState == TrainState.STUDENT_EXIT) {
+            CardInfo info = new CardInfo();
+            info.setUid(uid);
+            handleCard(info, RFID.CardType.StudentCard);
+        }
+    }
 
-//        handleCard(cardInfo, cardType);
+    /**
+     * 获取学员信息
+     *
+     * @param uid 卡内码
+     */
+    private void getStudentInfo(final long uid) {
+        MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
+        RequestBody body = RequestBody.create(mediaType, new Gson().toJson(new StudentAndCoachInfoRequest(uid)));
+        Request request = new Request.Builder()
+                .url(HttpConfig.studentLogin)
+                .post(body)
+                .build();
+
+        mClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                play("学员信息获取失败，请重试",200);
+                reCheckCard();
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                try {
+                    if (response != null && response.body() != null) {
+                        StudentInfo info;
+                        try {
+                            info = new Gson().fromJson(response.body().string(), StudentInfo.class);
+                        } catch (Exception e) {
+                            info = new StudentInfo(false, null);
+                        }
+                        if (info.isSuccess() && info.getResult() != null && !info.getResult().isEmpty()) {
+                            System.out.println("学员信息获取成功");
+                            handleCard(CardInfo.studentInfoToCardInfo(info.getResult().get(0), uid), RFID.CardType.StudentCard);
+                        } else {
+                            System.out.println("学员信息获取失败");
+                            play("学员信息获取失败，请重试",200);
+                            reCheckCard();
+                        }
+                    } else {
+                        play("学员信息获取失败，请重试",200);
+                        reCheckCard();
+                    }
+                } catch (Exception e){
+                    play("学员信息获取失败，请重试",200);
+                    reCheckCard();
+                }
+            }
+        });
+    }
+
+    /**
+     * 获取教练信息
+     *
+     * @param uid 卡内码
+     */
+    private void getCoachInfo(final long uid) {
+        MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
+        RequestBody body = RequestBody.create(mediaType, new Gson().toJson(new StudentAndCoachInfoRequest(uid)));
+        Request request = new Request.Builder()
+                .url(HttpConfig.coachLogin)
+                .post(body)
+                .build();
+
+        mClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                play("教练信息获取失败，请重试",200);
+                reCheckCard();
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                try {
+                    if (response != null && response.body() != null) {
+                        CoachInfo info;
+                        try {
+                            info = new Gson().fromJson(response.body().string(), CoachInfo.class);
+                        } catch (Exception e) {
+                            info = new CoachInfo(false, null);
+                        }
+                        if (info.isSuccess() && info.getResult() != null && !info.getResult().isEmpty()) {
+                            System.out.println("教练员信息获取成功");
+                            handleCard(CardInfo.coachInfoToCardInfo(info.getResult().get(0), uid), RFID.CardType.CommonCoachCard);
+                        } else {
+                            play("教练信息获取失败，请重试", 200);
+                            reCheckCard();
+                        }
+                    } else {
+                        play("教练信息获取失败，请重试", 200);
+                        reCheckCard();
+                    }
+                } catch (Exception e){
+                    play("教练信息获取失败，请重试",200);
+                    reCheckCard();
+                }
+            }
+        });
     }
 
     /**
@@ -672,20 +770,15 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
 
     /**
      * 人脸识别
-     *
-     * @param actionType 操作类型，教练登录或学员登录等
-     * @param type       人脸识别类型，1 教练，2 学员
-     * @param num        卡id
-     * @param inscode    驾校编号
      */
-    private void checkFace(final int actionType, final int type, final String num, final String inscode) {
+    private void checkFace(final int actionType, final String photoPath) {
 //        retryCount++;
         mCamera.takePicture(null, null, new Camera.PictureCallback() {
             @Override
             public void onPictureTaken(byte[] data, Camera camera) {
                 compressBitmap(BitmapFactory.decodeByteArray(data, 0, data.length), getTrainingPhotoPath(),
                         (byte) 0x14, mCoachCardInfo.getId(), true);
-                FaceVerifyRequest model = new FaceVerifyRequest(Base64.encodeToString(data, Base64.DEFAULT), type, num, inscode);
+                FaceVerifyRequest model = new FaceVerifyRequest(HttpConfig.PHOTO_PREFIX + photoPath, Base64.encodeToString(data, Base64.DEFAULT));
                 MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
                 RequestBody body = RequestBody.create(mediaType, new Gson().toJson(model));
 
@@ -704,67 +797,38 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                     }
 
                     @Override
-                    public void onResponse(Response response) throws IOException {
+                    public void onResponse(Response response) {
                         try {
-                            FaceVerifyResponse data = new Gson().fromJson(response.body().string(), FaceVerifyResponse.class);
+                            String result = response.body().string();
+                            System.out.println("人脸识别结果： " + result);
+                            FaceVerifyResponse data = new Gson().fromJson(result, FaceVerifyResponse.class);
                             if (data.getSuccess()) {
                                 Log.e("TrainActivity", "接口调用成功：" + new SimpleDateFormat("yyMMdd HH:mm:ss").format(new Date()));
-                                if (actionType == COACH_LOGIN_FACE) {
-                                    play("教练员签到成功，请学员刷卡签到", 200);
-                                    mState = TrainState.STUDENT_LOGIN;
-
-//                                    takePicture(0, 0x14, mCoachCardInfo.getId());
-                                    insertCoachLoginData(1);
-
-                                    mHandler.sendEmptyMessage(COACH_LOGIN_SUCCESS);
-                                    reCheckCard();
-                                } else if (actionType == STUDENT_LOGIN_FACE) {
+                                if (actionType == STUDENT_LOGIN_FACE) {
                                     play("学员签到成功，开始培训", 200);
                                     mState = TrainState.TRAINING;
 
-//                                    takePicture(0, 0x11, mStudentCardInfo.getId());
                                     startTrain();
 
                                     mHandler.sendEmptyMessage(START_TRAIN);
                                 } else if (actionType == STUDENT_LOGOUT_FACE) {
                                     mState = TrainState.STUDENT_LOGIN;
 
-                                    stopTrain(true);
+                                    stopTrain();
 
                                     mHandler.sendEmptyMessage(STUDENT_EXIT_SUCCESS);
 
                                     play("学员签退成功", 200);
-                                    reCheckCard();
-                                } else if (actionType == COACH_EXIT_STUDENT_FACE) {
-                                    mState = TrainState.STUDENT_LOGIN;
-
-                                    stopTrain(true);
-
-                                    mHandler.sendEmptyMessage(STUDENT_EXIT_SUCCESS);
-
-                                    play("学员签退成功", 200);
-                                    reCheckCard();
-                                } else if (actionType == COACH_LOGOUT_FACE) {
-                                    insertCoachLoginData(2);
-                                    play("教练员签退成功", 200);
-                                    mState = TrainState.COACH_LOGIN;
-                                    mHandler.sendEmptyMessage(COACH_EXIT_SUCCESS);
                                     reCheckCard();
                                 }
-                            }
-//                            else if (retryCount <= 3) {
-//                                play("人脸验证失败，请重试", 200);
-//                                Thread.sleep(2000);
-//                                checkFace(type, num, inscode);
-//                            }
-                            else {
+                            } else {
                                 Log.e("TrainActivity", "接口调用失败：" + new SimpleDateFormat("yyMMdd HH:mm:ss").format(new Date()));
                                 play("人脸识别失败，请重新刷卡验证", 200);
                                 reCheckCard();
                             }
-                        } catch (Exception e) {
-//                            e.printStackTrace();
-                            play("人脸识别失败，请联系管理员确认服务是否正常", 200);
+                        } catch (Exception e){
+                            e.printStackTrace();
+                            play("人脸识别失败，请重新刷卡验证", 200);
                             reCheckCard();
                         }
                     }
@@ -951,16 +1015,6 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                         && cardType != RFID.CardType.CommonCoachCard) {
                     play("不是实操教练卡", 200);
                     reCheckCard();
-                } else if (verifyMode == MODE_FACE) {
-                    mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
-                    mCoachCardInfo = cardInfo;
-                    play("教练员刷卡成功，请正对摄像头，开始人脸识别", 200);
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            checkFace(COACH_LOGIN_FACE, FACE_COACH, mCoachCardInfo.getId(), mCoachCardInfo.getCompany());
-                        }
-                    }, 2000);
                 } else {
                     mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
                     play("教练员签到成功，请学员刷卡签到", 200);
@@ -986,60 +1040,14 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                     play("学员培训车型不符", 200);
                     reCheckCard();
                 } else {
-                    if (cardInfo.getCardState() == 1) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                new AlertDialog.Builder(TrainActivity.this)
-                                        .setTitle("是否强制签到")
-                                        .setMessage("该卡没有正确签退，强制签到会导致上次培训数据丢失")
-                                        //.setIcon(R.drawable.warning_sign)
-                                        .setPositiveButton("是", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                mStudentCardInfo = cardInfo;
-                                                mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
-
-                                                if (verifyMode == MODE_FACE) {
-                                                    dialog.dismiss();
-                                                    play("学员刷卡成功，请正对摄像头，开始人脸识别", 200);
-                                                    new Timer().schedule(new TimerTask() {
-                                                        @Override
-                                                        public void run() {
-                                                            checkFace(STUDENT_LOGIN_FACE, FACE_STUDENT, mStudentCardInfo.getId(), mStudentCardInfo.getCompany());
-                                                        }
-                                                    }, 2000);
-                                                } else {
-                                                    dialog.dismiss();
-                                                    play("学员签到成功，开始培训", 200);
-                                                    mState = TrainState.TRAINING;
-
-//                                                    takePicture(0, 0x11, mStudentCardInfo.getId());
-                                                    startTrain();
-
-                                                    mHandler.sendEmptyMessage(START_TRAIN);
-                                                }
-                                            }
-                                        })
-                                        .setNegativeButton("否", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                dialog.dismiss();
-                                                startCheckCard();
-                                            }
-                                        })
-                                        .create()
-                                        .show();
-                            }
-                        });
-                    } else if (verifyMode == MODE_FACE) {
+                    if (IUtil.isFaceOpen) {
                         mStudentCardInfo = cardInfo;
                         mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
                         play("学员刷卡成功，请正对摄像头，开始人脸识别", 200);
                         new Timer().schedule(new TimerTask() {
                             @Override
                             public void run() {
-                                checkFace(STUDENT_LOGIN_FACE, FACE_STUDENT, mStudentCardInfo.getId(), mStudentCardInfo.getCompany());
+                                checkFace(STUDENT_LOGIN_FACE, mStudentCardInfo.getHeadImage());
                             }
                         }, 2000);
                     } else {
@@ -1056,47 +1064,20 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                 }
                 break;
             case STUDENT_EXIT:
-                if ((cardType == RFID.CardType.CommonCoachCard ||
-                        cardType == RFID.CardType.PracticeCoachCard)
-                        && cardInfo.getId().equals(mCoachCardInfo.getId())) {
+                if (mStudentCardInfo != null && mStudentCardInfo.getUid() == cardInfo.getUid()) {
                     mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
-
-                    if (verifyMode == MODE_FACE) {
-                        play("教练员刷卡成功，请正对摄像头，开始人脸识别", 200);
-                        new Timer().schedule(new TimerTask() {
-                            @Override
-                            public void run() {
-                                checkFace(COACH_EXIT_STUDENT_FACE, FACE_COACH, mCoachCardInfo.getId(), mCoachCardInfo.getCompany());
-                            }
-                        }, 2000);
-                    } else {
-                        mState = TrainState.STUDENT_LOGIN;
-
-                        stopTrain(true);
-
-                        mHandler.sendEmptyMessage(STUDENT_EXIT_SUCCESS);
-
-                        play("学员签退成功", 200);
-                        reCheckCard();
-                    }
-                } else if (cardType != RFID.CardType.StudentCard) {
-                    play("不是学员卡", 200);
-                    reCheckCard();
-                } else if (mStudentCardInfo != null && mStudentCardInfo.getId() != null
-                        && mStudentCardInfo.getId().equals(cardInfo.getId())) {
-                    mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
-                    if (verifyMode == MODE_FACE) {
+                    if (IUtil.isFaceOpen) {
                         play("学员刷卡成功，请正对摄像头，开始人脸识别", 200);
                         new Timer().schedule(new TimerTask() {
                             @Override
                             public void run() {
-                                checkFace(STUDENT_LOGOUT_FACE, FACE_STUDENT, mStudentCardInfo.getId(), mStudentCardInfo.getCompany());
+                                checkFace(STUDENT_LOGOUT_FACE, mStudentCardInfo.getHeadImage());
                             }
                         }, 2000);
                     } else {
                         mState = TrainState.STUDENT_LOGIN;
 
-                        stopTrain(true);
+                        stopTrain();
 
                         mHandler.sendEmptyMessage(STUDENT_EXIT_SUCCESS);
 
@@ -1107,50 +1088,23 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                     play("学员卡信息有误", 200);
                     reCheckCard();
                 }
-//                try {
-//                    Thread.sleep(3000);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//                startCheckCard();
                 break;
             case COACH_EXIT:
-                if (cardType != RFID.CardType.PracticeCoachCard
-                        && cardType != RFID.CardType.CommonCoachCard) {
-                    play("无效卡", 200);
+                if (mCoachCardInfo != null && mCoachCardInfo.getUid() == cardInfo.getUid()) {
+                    mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
+                    insertCoachLoginData(2);
+                    play("教练员签退成功", 200);
+                    mState = TrainState.COACH_LOGIN;
+
                     try {
                         Thread.sleep(3000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     startCheckCard();
-                } else if (mCoachCardInfo != null && mCoachCardInfo.getId() != null
-                        && mCoachCardInfo.getId().equals(cardInfo.getId())) {
-                    mSoundPool.play(soundSuccess, 1, 1, 0, 0, 1);
 
-                    if (verifyMode == MODE_FACE) {
-                        play("教练员刷卡成功，请正对摄像头，开始人脸识别", 200);
-                        new Timer().schedule(new TimerTask() {
-                            @Override
-                            public void run() {
-                                checkFace(COACH_LOGOUT_FACE, FACE_COACH, mCoachCardInfo.getId(), mCoachCardInfo.getCompany());
-                            }
-                        }, 2000);
-                    } else {
-                        insertCoachLoginData(2);
-                        play("教练员签退成功", 200);
-//                    toast("教练签退成功");
-                        mState = TrainState.COACH_LOGIN;
-
-                        try {
-                            Thread.sleep(3000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        startCheckCard();
-
-                        mHandler.sendEmptyMessage(COACH_EXIT_SUCCESS);
-                    }
+                    mHandler.sendEmptyMessage(COACH_EXIT_SUCCESS);
+//                    }
                 } else {
                     play("教练卡信息有误", 200);
                 }
@@ -1178,6 +1132,8 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
         // TODO: 2019-07-16 GPS
         startMilesUsedByMinuteRecord = (int) (IUtil.Distance / 1000);
 
+        CommonInfo.setStuNumber(mStudentCardInfo.getId().getBytes());
+
         scheduleMinuteRecord();
 
         clearRecord();
@@ -1195,12 +1151,6 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
 
         if (todayPracticeTime > 240) {
             play("您今天已累计学满四小时，是否继续学习", 200);
-//            runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    showTimeOutDialog();
-//                }
-//            });
             mHandler.sendEmptyMessage(TIMEOUT);
         } else {
             if (fourHourAlarmTask != null) {
@@ -1212,18 +1162,11 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                 @Override
                 public void run() {
                     play("您今天已累计学满四小时，是否继续学习", 200);
-//                    runOnUiThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            showTimeOutDialog();
-//                        }
-//                    });
                     mHandler.sendEmptyMessage(TIMEOUT);
                 }
             };
 
             new Timer().schedule(fourHourAlarmTask, 4 * 60 * 60 * 1000 - todayPracticeTime * 60 * 1000);
-//            new Timer().schedule(fourHourAlarmTask, 5 * 60 * 1000 - todayPracticeTime * 60 * 1000);
         }
 
 
@@ -1350,10 +1293,8 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
 
     /**
      * 停止培训
-     *
-     * @param selfExit true 学员刷卡签退 false 教练员代签退
      */
-    private void stopTrain(boolean selfExit) {
+    private void stopTrain() {
         clearRecord();
 
         IUtil.OnClass = false;
@@ -1368,6 +1309,8 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
         takePicture(0, 0x12, mStudentCardInfo.getId());
 
         mStudentCardInfo = null;
+
+        CommonInfo.setStuNumber(new byte[0]);
     }
 
     private void insertStudent(int type) {
@@ -1402,7 +1345,7 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
 //                info.setMiles(MilesCalculateUtil.calculateMiles(mStudentCardInfo.getCarType(), mStudentCardInfo.getSubjectTwoLearnedTime(), (byte) 2, mStudentCardInfo.getSubjectTwoLearnedMiles(),
 //                        time) / 100);
 //            else
-                info.setMiles(MilesCalculateUtil.calculateDistance(mStudentCardInfo.getCarType(), (byte) 3, time) / 100);
+            info.setMiles(MilesCalculateUtil.calculateDistance(mStudentCardInfo.getCarType(), (byte) 3, time) / 100);
 //                info.setMiles(MilesCalculateUtil.calculateMiles(mStudentCardInfo.getCarType(), mStudentCardInfo.getSubjectThreeLearnedTime(), (byte) 3, mStudentCardInfo.getSubjectThreeLearnedMiles(),
 //                        time) / 100);
             info.setMiles(totalMiles / 100);
@@ -1543,10 +1486,6 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
     }
 
     private boolean savePhotoPath(String photoPath, byte eventType, String number) {
-
-        // TODO: 2019/3/15 此处打印照片信息存储
-        Log.e("TrainActivity", "savePhotoPath");
-
         if (eventType == 0) {
             number = new String(CommonInfo.getStuNumber());
         }
@@ -1677,7 +1616,7 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
             totalMiles = (int) (IUtil.Distance / 1000);
             mTvTrainMiles.setText("训练里程: 0" + new DecimalFormat("#.000").format(IUtil.Distance / 1000) + " km");
         }
-        mTvSpeed.setText("当前车速：" + (int)GPSInfo.getSpeed() + "km/h");
+        mTvSpeed.setText("当前车速：" + (int) GPSInfo.getSpeed() + "km/h");
 
         if (maxSpeedPerMinute < GPSInfo.getSpeed())
             maxSpeedPerMinute = (int) GPSInfo.getSpeed();

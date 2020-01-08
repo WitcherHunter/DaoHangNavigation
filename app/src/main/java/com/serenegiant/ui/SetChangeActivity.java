@@ -145,27 +145,32 @@ public class SetChangeActivity extends Activity implements View.OnClickListener,
     };
 
     @Override
-    public void onReadSuccess(CardInfo cardInfo, RFID.CardType cardType) {
-        handler.sendEmptyMessage(0);
-        if (cardInfo != null) {
-            RFID.CardType mCardType = cardInfo.getCardType();
-            switch (mCardType) {
-                case DrivingSchoolManageCard://驾校管理卡
-                    Log.e(TAG, "驾校管理卡");
-                    handler.sendEmptyMessage(6);
-                    break;
-                case DaohangManageCard://导航管理卡
-                    Log.e(TAG, "导航管理卡");
-                    handler.sendEmptyMessage(5);
-                    break;
-                default:
-                    startCheckCard();
-                    break;
-            }
-        } else {
-            Log.e(TAG, "run: cardInfo is null");
-        }
+    public void onReadSuccess(long uid) {
+
     }
+
+//    @Override
+//    public void onReadSuccess(CardInfo cardInfo, RFID.CardType cardType) {
+//        handler.sendEmptyMessage(0);
+//        if (cardInfo != null) {
+//            RFID.CardType mCardType = cardInfo.getCardType();
+//            switch (mCardType) {
+//                case DrivingSchoolManageCard://驾校管理卡
+//                    Log.e(TAG, "驾校管理卡");
+//                    handler.sendEmptyMessage(6);
+//                    break;
+//                case DaohangManageCard://导航管理卡
+//                    Log.e(TAG, "导航管理卡");
+//                    handler.sendEmptyMessage(5);
+//                    break;
+//                default:
+//                    startCheckCard();
+//                    break;
+//            }
+//        } else {
+//            Log.e(TAG, "run: cardInfo is null");
+//        }
+//    }
 
     @Override
     protected void onPause() {

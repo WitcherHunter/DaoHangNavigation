@@ -1,15 +1,15 @@
 package com.serenegiant.entiy;
 
 public class FaceVerifyResponse {
-    private Boolean success = false;
+    private boolean success = false;
 
     private int result;
 
-    public Boolean getSuccess() {
+    public boolean getSuccess() {
         return success;
     }
 
-    public void setSuccess(Boolean success) {
+    public void setSuccess(boolean success) {
         this.success = success;
     }
 

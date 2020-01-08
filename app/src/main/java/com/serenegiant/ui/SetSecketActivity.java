@@ -94,18 +94,18 @@ public class SetSecketActivity extends Activity {
             port.setText("" + DeviceParameter.getLoginPort());
         else {
 //            port.setText(HttpConfig.SERVER_PORT);
-            port.setText("8081");
+            port.setText("2346");
         }
 
         if (DeviceParameter.getDeviceNumber() != null && !DeviceParameter.getDeviceNumber().isEmpty())
             sim.setText("" + DeviceParameter.getDeviceNumber().substring(5));
         else
-            sim.setText("13811113333");
+            sim.setText("13745612378");
 
         if (DeviceParameter.getLoginPlate() != null && !DeviceParameter.getLoginPlate().isEmpty())
             carNum.setText("" + DeviceParameter.getLoginPlate());
         else
-            carNum.setText("陕AA720学");
+            carNum.setText("湘KE609学");
 
         /*
          * 超速阀值为新加参数

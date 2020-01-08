@@ -3154,6 +3154,11 @@ public class TcpClient extends Thread {
                         CommonInfo.setCurMilesOutline((dataContent[21] & 0xFF) * 256 + (dataContent[22] & 0xFF));//总培训里程
                         CommonInfo.setCurMilesLearned((dataContent[23] & 0xFF) * 256 + (dataContent[24] & 0xFF));//当前培训部分里程
                         CommonInfo.setCurStuValid(dataContent[0]);
+
+                        System.out.println("学员登录应答----总培训学时：" + CommonInfo.getCurItemOutline());
+                        System.out.println("学员登录应答----当前部分培训学时：" + CommonInfo.getCurItemLearned());
+                        System.out.println("学员登录应答----总培训里程：" + CommonInfo.getCurMilesOutline());
+                        System.out.println("学员登录应答----当前部分培训里程：" + CommonInfo.getCurMilesLearned());
                     } else {
                         Log.i(TAG, "学员编号不同" + new String(tempBytes));
                     }
@@ -4423,9 +4428,13 @@ public class TcpClient extends Thread {
                     for (int i = 0; i < 20 - DeviceParameter.getDeviceType().getBytes().length; i++) {
                         buf[index++] = 0x00;
                     }
-                    System.arraycopy(DeviceParameter.getDeviceSerial(), 0, buf, index, 7);//计时终端出厂序列号 7zijie
+                    // TODO: 2020-01-07 出厂序列号暂时也是假的
+//                    System.arraycopy(DeviceParameter.getDeviceSerial(), 0, buf, index, 7);//计时终端出厂序列号 7zijie
+                    System.arraycopy("C123456".getBytes(), 0, buf, index, 7);//计时终端出厂序列号 7zijie
                     index += 7;
-                    System.arraycopy(DeviceParameter.getDeviceIMEI().getBytes(), 0, buf, index, 15);
+                    // TODO: 2020-01-07 这里的imei号暂时是假的
+//                    System.arraycopy(DeviceParameter.getDeviceIMEI().getBytes(), 0, buf, index, 15);
+                    System.arraycopy("868704043712345".getBytes(), 0, buf, index, 15);
                     index += 15;
                     buf[index++] = DeviceParameter.getCarColor();//车牌颜色
                     for (byte b : plateNumber) { //车牌号

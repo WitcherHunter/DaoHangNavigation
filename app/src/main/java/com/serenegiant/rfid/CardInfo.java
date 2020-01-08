@@ -1,10 +1,15 @@
 package com.serenegiant.rfid;
 
+import com.serenegiant.entiy.CoachInfo;
+import com.serenegiant.entiy.StudentInfo;
+
 public class CardInfo {
 
   /**
    * 第一扇区
    */
+  long uid;
+
   //卡片类型
   RFID.CardType cardType = RFID.CardType.UnKnown;
   //学员/教练编号
@@ -13,6 +18,24 @@ public class CardInfo {
   String name = "";
   //单日训练时长，单位为分
   int practiceTimePerDay = 0;
+
+  String HeadImage;
+
+  public long getUid() {
+    return uid;
+  }
+
+  public void setUid(long uid) {
+    this.uid = uid;
+  }
+
+  public String getHeadImage() {
+    return HeadImage;
+  }
+
+  public void setHeadImage(String headImage) {
+    HeadImage = headImage;
+  }
 
   public RFID.CardType getCardType() {
     return cardType;
@@ -51,12 +74,22 @@ public class CardInfo {
    */
   //证件号码
   String identification = "";
-  //所属驾校
+  //所属驾校编号
   String company = "";
+  //所属驾校名称
+  String companyName = "";
   //卡有效期
   String validityPeriod = "";
   //培训车型
   String carType = "";
+
+  public String getCompanyName() {
+    return companyName;
+  }
+
+  public void setCompanyName(String companyName) {
+    this.companyName = companyName;
+  }
 
   public String getIdentification() {
     return identification;
@@ -380,5 +413,33 @@ public class CardInfo {
 
   public void setFinger2(byte[] finger2) {
     this.finger2 = finger2;
+  }
+
+
+  public static CardInfo coachInfoToCardInfo(CoachInfo.ResultBean info, long uid){
+    CardInfo cardInfo = new CardInfo();
+    cardInfo.setUid(uid);
+    cardInfo.setName(info.getName());
+    cardInfo.setIdentification(info.getIdCard());
+    cardInfo.setId(info.getCoachNum());
+    cardInfo.setCompany(info.getInsCode());
+    cardInfo.setCompanyName(info.getDepartMentName());
+    cardInfo.setHeadImage(info.getHeadImage());
+    cardInfo.setCarType(antiEnumCarType(info.getTeachpermitted()));
+    return cardInfo;
+  }
+
+  public static CardInfo studentInfoToCardInfo(StudentInfo.ResultBean info, long uid){
+    CardInfo cardInfo = new CardInfo();
+    cardInfo.setUid(uid);
+    cardInfo.setName(info.getName());
+    cardInfo.setIdentification(info.getIdCard());
+    cardInfo.setId(info.getStuNum());
+    cardInfo.setCompany(info.getInsCode());
+    cardInfo.setCompanyName(info.getDepartMentName());
+    cardInfo.setHeadImage(info.getHeadImage());
+    cardInfo.setCarType(antiEnumCarType(info.getTrainType()));
+    cardInfo.setPracticeTime(info.getTodaySubTwo() + info.getTodaySubThree());
+    return cardInfo;
   }
 }

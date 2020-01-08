@@ -7,10 +7,13 @@ package com.serenegiant.http;
 public class HttpConfig {
     public static final String code = "gyjp";
 
-    public static String SERVER_IP = "218.77.100.37";
-    public static int SERVER_PORT = 8089;
+    public static final String SERVER_IP = "218.77.100.37";
+    public static final int SERVER_PORT = 8089;
 
-    public static String URL_FREFIX = "http://" + SERVER_IP + ":" + SERVER_PORT + "/api/appdev/";
+    public static final String URL_FREFIX = "http://" + SERVER_IP + ":" + SERVER_PORT + "/api/appdev/";
+
+    //人脸识别url前缀
+    public static final String PHOTO_PREFIX = "http://" + SERVER_IP + ":" + SERVER_PORT;
 
     //验证人脸识别是否打开
     public static final String faceOpen = URL_FREFIX + "getstudentfacestate";
@@ -21,7 +24,7 @@ public class HttpConfig {
     //获取电子围栏
     public static final String locations = URL_FREFIX + "getregions";
     //人脸识别
-    public static final String checkFace = URL_FREFIX + "getstudentpore";
+    public static final String checkFace = URL_FREFIX + "getstudentphotoscore";
     //在线升级
     public static String updateVersionUrl = URL_FREFIX + "version/" + code + "/2";
     //下载apk

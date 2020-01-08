@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,7 +18,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -33,9 +31,9 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,12 +41,14 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.gson.Gson;
 import com.navigation.timerterminal.BuildConfig;
 import com.navigation.timerterminal.R;
 import com.serenegiant.AppConfig;
 import com.serenegiant.AppContext;
 import com.serenegiant.dataFormat.UpdateInfo;
 import com.serenegiant.db.SQLiteHelper;
+import com.serenegiant.entiy.FaceOpenResponse;
 import com.serenegiant.entiy.GPSInfo;
 import com.serenegiant.entiy.MinuteRecord;
 import com.serenegiant.entiy.TimerDerminalEvent;
@@ -56,12 +56,9 @@ import com.serenegiant.http.HttpConfig;
 import com.serenegiant.http.OkHttpClientManager;
 import com.serenegiant.net.CommonInfo;
 import com.serenegiant.net.DeviceParameter;
-import com.serenegiant.net.HttpUtils;
 import com.serenegiant.net.TcpClient;
 import com.serenegiant.receiver.GeoFenceReceiver;
-import com.serenegiant.services.LocationService;
 import com.serenegiant.services.NewLocationService;
-import com.serenegiant.services.SendPositionService;
 import com.serenegiant.services.SendPositionTask;
 import com.serenegiant.utils.IUtil;
 import com.serenegiant.utils.MessageDefine;
@@ -70,28 +67,25 @@ import com.serenegiant.utils.SharedPreferencesUtil;
 import com.serenegiant.utils.ShellUtils;
 import com.serenegiant.utils.SoundManage;
 import com.serenegiant.utils.Utils;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import de.greenrobot.event.EventBus;
 
@@ -99,6 +93,9 @@ import static com.serenegiant.services.NewLocationService.GEOFENCE_BROADCAST_ACT
 
 
 public class AutomaticDetectionActivity extends BaseActivity {
+
+    private OkHttpClient mOkHttpClient;
+    private boolean faceModeGetted = false;
 
     public static AutomaticDetectionActivity automaticDetectionActivity;
 
@@ -181,6 +178,10 @@ public class AutomaticDetectionActivity extends BaseActivity {
         EventBus.getDefault().register(this);
 
         initPermissions();
+
+        mOkHttpClient = new OkHttpClient();
+        mOkHttpClient.setReadTimeout(10000, TimeUnit.MILLISECONDS);
+        mOkHttpClient.setConnectTimeout(10000, TimeUnit.MILLISECONDS);
 
         mContext = this;
         sendMessageCount = this.getSharedPreferences("SendMessageCount", MODE_PRIVATE);
@@ -280,7 +281,45 @@ public class AutomaticDetectionActivity extends BaseActivity {
         }
     }
 
-    private void registerGeoFenceReceiver(){
+    private void getFaceOpen() {
+        RequestBody body = RequestBody.create(null, "");
+
+        Request request = new Request.Builder()
+                .url(HttpConfig.faceOpen)
+                .post(body)
+                .build();
+
+        mOkHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                Log.d("GetFaceOpen", "获取人脸识别开关状态失败");
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                FaceOpenResponse info;
+                if (response != null && response.body() != null) {
+                    try {
+                        info = new Gson().fromJson(response.body().string(), FaceOpenResponse.class);
+                    } catch (Exception e) {
+                        info = new FaceOpenResponse(false, "-1");
+                    }
+
+                    if (info.isSuccess()) {
+                        // TODO: 2020-01-08 此处反转
+                        IUtil.isFaceOpen = info.getResult().equals("1");
+                    } else {
+                        Log.d("GetFaceOpen", "无法获取人脸识别开关");
+                    }
+                } else {
+                    Log.d("GetFaceOpen", "人脸识别开关状态接口调用失败");
+                }
+
+            }
+        });
+    }
+
+    private void registerGeoFenceReceiver() {
         IntentFilter filter = new IntentFilter(
                 ConnectivityManager.CONNECTIVITY_ACTION);
         filter.addAction(GEOFENCE_BROADCAST_ACTION);
@@ -435,8 +474,32 @@ public class AutomaticDetectionActivity extends BaseActivity {
 
 
                 case R.id.bt_auto_detec_examine:
-//                    startActivityForResult(new Intent(AutomaticDetectionActivity.this, SetActivity.class), 0);
-                    startActivity(new Intent(AutomaticDetectionActivity.this, SetChangeActivity.class));
+                    AlertDialog.Builder dialog = new AlertDialog.Builder(AutomaticDetectionActivity.this);
+                    final EditText etPassword = new EditText(AutomaticDetectionActivity.this);
+                    dialog.setView(etPassword);
+                    dialog.setMessage("请输入密码：");
+                    dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (etPassword.getText() != null && !etPassword.getText().toString().isEmpty()) {
+                                if (etPassword.getText().toString().equals(IUtil.managerCardPassword)) {
+                                    startActivity(new Intent(AutomaticDetectionActivity.this, SetChangeActivity.class));
+                                    dialog.cancel();
+                                }
+                                else
+                                    Toast.makeText(mContext, "密码错误", Toast.LENGTH_SHORT).show();
+                            } else
+                                Toast.makeText(mContext, "请输入密码", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
+                    dialog.setCancelable(false);
+                    dialog.show();
                     break;
                 case R.id.part_two_ll:
                     if (checkDeviceValid) {
@@ -863,6 +926,10 @@ public class AutomaticDetectionActivity extends BaseActivity {
         updateVersion();
 //        installApkSilence(AppConfig.UPDATE_VERSION + "/release_update.apk");
         selectnum = true;
+
+        //获取人脸识别开关状态
+        getFaceOpen();
+
         new selectNUM().start();
         if (IUtil.IsGPS) {
 //            startService(new Intent(this, GPSService.class));
@@ -1301,6 +1368,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
 
     /**
      * 静默安装
+     *
      * @param path apk路径
      */
     private void installApkSilence(final String path) {
@@ -1349,12 +1417,12 @@ public class AutomaticDetectionActivity extends BaseActivity {
 //                }
 //            }
 //        }.start();
-        new Thread(){
+        new Thread() {
             @Override
             public void run() {
                 ShellUtils.CommandResult commandResult = ShellUtils.execCommand(
                         Arrays.asList("pm install -r " + path,
-                                "am start -n com.navigation.timerterminal/com.serenegiant.ui.SetActivity"),true);
+                                "am start -n com.navigation.timerterminal/com.serenegiant.ui.SetActivity"), true);
                 Log.d(TAG, "run: " + commandResult.toString());
             }
         }.start();

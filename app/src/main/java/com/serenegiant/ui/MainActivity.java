@@ -10,6 +10,7 @@ import android.view.View;
 
 import com.navigation.timerterminal.R;
 import com.serenegiant.usbcameratest4.MyAccessibilityService;
+import com.squareup.okhttp.OkHttpClient;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -17,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class MainActivity extends Activity {
+
+	private OkHttpClient client;
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

@@ -491,27 +491,27 @@ public class DeviceParameter {
         drivingName="驾校";
 
         //loginIP = "114.215.173.239";//检测
-        loginIP="www.gyjponline.com";//39
+        loginIP="218.77.100.37";//39
         //loginIP="203.86.28.37";//公司测试
 //        loginIP="";//测试默认
         //loginPort = 9001;
 //        loginPort=48080;
-        loginPort=8081;
+        loginPort=2346;
 //        loginPort=0;//测试默认
-        loginPlate = "陕AA521学";
+        loginPlate = "湘KE609学";
         //deviceIMEI = "100203086028045";
-        proviceID = 11;
-        cityID = 108;
+        proviceID = 43;
+        cityID = 1322;
 
-        manufacturerID = "J0101";
+        manufacturerID = "BDMCH";
         //deviceType = "ST-001";
         deviceType = "V600";
-        deviceSerial = "1001002".getBytes();
+        deviceSerial = "C123456".getBytes();
 
         studentFingerEn = false;
         coachFingerEn = false;
 //        long serial = Long.valueOf(Build.SERIAL, 16);
-        deviceNumber = "0000013622221234";//测试终端ID
+        deviceNumber = "0000013745612378";//测试终端ID
         carColor = 2;
     }
 
