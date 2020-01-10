@@ -9,7 +9,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 26
         versionCode 15
-        versionName "1.1.1.191122_DH_CD"
+        versionName "1.1.2.200110_DH_LD"
 //        externalNativeBuild {
 //            cmake {
 //                cppFlags ""

@@ -1,7 +1,9 @@
 package com.serenegiant.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,6 +13,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,6 +24,7 @@ import com.serenegiant.rfid.CardInfo;
 import com.serenegiant.rfid.OnCardCheckedListener;
 import com.serenegiant.rfid.RFID;
 import com.serenegiant.rfid.RfidThread;
+import com.serenegiant.utils.IUtil;
 import com.serenegiant.utils.MessageDefine;
 import com.serenegiant.utils.SoundManage;
 
@@ -85,15 +89,31 @@ public class SetChangeActivity extends Activity implements View.OnClickListener,
                 startActivity(new Intent(SetChangeActivity.this, SetSystemActivity.class));
                 break;
             case R.id.setOhter:
-                speechTask = new TimerTask() {
+                AlertDialog.Builder dialog = new AlertDialog.Builder(SetChangeActivity.this);
+                final EditText etPassword = new EditText(SetChangeActivity.this);
+                dialog.setView(etPassword);
+                dialog.setMessage("请输入密码：");
+                dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
-                    public void run() {
-                        play("请刷管理卡");
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (etPassword.getText() != null && !etPassword.getText().toString().isEmpty()) {
+                            if (etPassword.getText().toString().equals(IUtil.managerCardPassword)) {
+                                startActivity(new Intent(SetChangeActivity.this, SetSecketActivity.class));
+                                dialog.cancel();
+                            } else
+                                Toast.makeText(SetChangeActivity.this, "密码错误", Toast.LENGTH_SHORT).show();
+                        } else
+                            Toast.makeText(SetChangeActivity.this, "请输入密码", Toast.LENGTH_SHORT).show();
                     }
-                };
-                new Timer().schedule(speechTask,0,6000);
-                startCheckCard();
-                setCard.setClickable(false);
+                });
+                dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+                dialog.setCancelable(false);
+                dialog.show();
                 break;
         }
     }
@@ -122,55 +142,11 @@ public class SetChangeActivity extends Activity implements View.OnClickListener,
         SoundManage.ttsPlaySound(SetChangeActivity.this, txt);
     }
 
-    Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            switch (msg.what) {
-                case 5:
-                    play("导航管理卡");
-                    startActivity(new Intent(SetChangeActivity.this, SetDaoHangActivity.class));
-                    finish();
-                    break;
-                case 6:
-                    play("驾校管理卡");
-                    startActivity(new Intent(SetChangeActivity.this, SetSecketActivity.class));
-                    finish();
-                    break;
-                default:
-                    play("请刷管理卡");
-                    break;
-            }
-        }
-    };
-
     @Override
     public void onReadSuccess(long uid) {
 
     }
 
-//    @Override
-//    public void onReadSuccess(CardInfo cardInfo, RFID.CardType cardType) {
-//        handler.sendEmptyMessage(0);
-//        if (cardInfo != null) {
-//            RFID.CardType mCardType = cardInfo.getCardType();
-//            switch (mCardType) {
-//                case DrivingSchoolManageCard://驾校管理卡
-//                    Log.e(TAG, "驾校管理卡");
-//                    handler.sendEmptyMessage(6);
-//                    break;
-//                case DaohangManageCard://导航管理卡
-//                    Log.e(TAG, "导航管理卡");
-//                    handler.sendEmptyMessage(5);
-//                    break;
-//                default:
-//                    startCheckCard();
-//                    break;
-//            }
-//        } else {
-//            Log.e(TAG, "run: cardInfo is null");
-//        }
-//    }
 
     @Override
     protected void onPause() {

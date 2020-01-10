@@ -15,6 +15,8 @@ public class HttpConfig {
     //人脸识别url前缀
     public static final String PHOTO_PREFIX = "http://" + SERVER_IP + ":" + SERVER_PORT;
 
+    //获取设备信息
+    public static final String deviceInfo = URL_FREFIX + "getdeviceinfo";
     //验证人脸识别是否打开
     public static final String faceOpen = URL_FREFIX + "getstudentfacestate";
     //获取学员信息

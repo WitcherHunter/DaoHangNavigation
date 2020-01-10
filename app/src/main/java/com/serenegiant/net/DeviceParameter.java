@@ -295,6 +295,14 @@ public class DeviceParameter {
         return proviceID;
     }
 
+    public static void setCityID(int cityID) {
+        DeviceParameter.cityID = cityID;
+    }
+
+    public static void setProviceID(int proviceID){
+        DeviceParameter.proviceID = proviceID;
+    }
+
     private static int proviceID;
     private static int cityID;
 
@@ -322,8 +330,16 @@ public class DeviceParameter {
         return manufacturerID;
     }
 
+    public static void setManufacturerID(String manufacturerID) {
+        DeviceParameter.manufacturerID = manufacturerID;
+    }
+
     public static String getDeviceType() {
         return deviceType;
+    }
+
+    public static void setDeviceType(String deviceType) {
+        DeviceParameter.deviceType = deviceType;
     }
 
     private static  String manufacturerID;
@@ -503,16 +519,19 @@ public class DeviceParameter {
         proviceID = 43;
         cityID = 1322;
 
-        manufacturerID = "BDMCH";
+//        manufacturerID = "BDMCH";
+        manufacturerID = "";
         //deviceType = "ST-001";
-        deviceType = "V600";
-        deviceSerial = "C123456".getBytes();
+//        deviceType = "V600";
+        deviceType = "";
+//        deviceSerial = "123456".getBytes();
+        deviceSerial = "".getBytes();
 
         studentFingerEn = false;
         coachFingerEn = false;
 //        long serial = Long.valueOf(Build.SERIAL, 16);
         deviceNumber = "0000013745612378";//测试终端ID
-        carColor = 2;
+//        carColor = 2;
     }
 
     public static byte[] getTelnetParameter()

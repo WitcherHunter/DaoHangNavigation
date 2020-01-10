@@ -1249,16 +1249,15 @@ public class TrainActivity extends BaseActivity implements OnCardCheckedListener
                     @Override
                     public void run() {
                         if (mTvTotalTime != null) {
-                            if (CommonInfo.getCurItemLearned() != 0) {
-                                currentLearnedTime = CommonInfo.getCurItemLearned();
-                            } else if (mStudentCardInfo != null) {
-                                if (CommonInfo.getCurItem() == 2 && mStudentCardInfo.getSubjectTwoLearnedTime() != 0)
-                                    currentLearnedTime = mStudentCardInfo.getSubjectTwoLearnedTime();
-                                else if (CommonInfo.getCurItem() == 3 && mStudentCardInfo.getSubjectThreeLearnedTime() != 0)
-                                    currentLearnedTime = mStudentCardInfo.getSubjectThreeLearnedTime();
-                            }
-
-                            mTvTotalTime.setText("累计时长: " + currentLearnedTime + "分钟");
+//                            if (CommonInfo.getCurItemLearned() != 0) {
+//                                currentLearnedTime = CommonInfo.getCurItemLearned();
+//                            } else if (mStudentCardInfo != null) {
+//                                if (CommonInfo.getCurItem() == 2 && mStudentCardInfo.getSubjectTwoLearnedTime() != 0)
+//                                    currentLearnedTime = mStudentCardInfo.getSubjectTwoLearnedTime();
+//                                else if (CommonInfo.getCurItem() == 3 && mStudentCardInfo.getSubjectThreeLearnedTime() != 0)
+//                                    currentLearnedTime = mStudentCardInfo.getSubjectThreeLearnedTime();
+//                            }
+                            mTvTotalTime.setText("累计时长: " + CommonInfo.getCurItemLearned() + "分钟");
                         }
                     }
                 });

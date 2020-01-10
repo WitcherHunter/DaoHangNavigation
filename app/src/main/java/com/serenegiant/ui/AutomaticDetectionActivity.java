@@ -48,9 +48,12 @@ import com.serenegiant.AppConfig;
 import com.serenegiant.AppContext;
 import com.serenegiant.dataFormat.UpdateInfo;
 import com.serenegiant.db.SQLiteHelper;
+import com.serenegiant.entiy.DeviceInfoRequest;
+import com.serenegiant.entiy.DeviceInfoResponse;
 import com.serenegiant.entiy.FaceOpenResponse;
 import com.serenegiant.entiy.GPSInfo;
 import com.serenegiant.entiy.MinuteRecord;
+import com.serenegiant.entiy.StudentAndCoachInfoRequest;
 import com.serenegiant.entiy.TimerDerminalEvent;
 import com.serenegiant.http.HttpConfig;
 import com.serenegiant.http.OkHttpClientManager;
@@ -68,6 +71,7 @@ import com.serenegiant.utils.ShellUtils;
 import com.serenegiant.utils.SoundManage;
 import com.serenegiant.utils.Utils;
 import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
@@ -165,14 +169,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //退出程序
-//        if ((Intent.FLAG_ACTIVITY_CLEAR_TOP & getIntent().getFlags()) != 0) {
-//            //com.rscja.deviceapi.OTG.getInstance().On(); //关闭OTG
-//            finish();
-//            Process.killProcess(Process.myPid());    //获取PID
-//            System.exit(0);
-//            return;
-//        }
+
         setContentView(R.layout.activity_automatic_detection);
 
         EventBus.getDefault().register(this);
@@ -244,6 +241,8 @@ public class AutomaticDetectionActivity extends BaseActivity {
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
         if (null == automaticDetectionActivity) {
+            TcpClient.getInstance(AutomaticDetectionActivity.this).start();
+            MessageDefine.isTcpStart = true;
             refreshHand.sendEmptyMessageDelayed(999, 100);
         }
         automaticDetectionActivity = this;
@@ -281,6 +280,9 @@ public class AutomaticDetectionActivity extends BaseActivity {
         }
     }
 
+    /**
+     * 获取人脸识别开关状态
+     */
     private void getFaceOpen() {
         RequestBody body = RequestBody.create(null, "");
 
@@ -306,7 +308,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
                     }
 
                     if (info.isSuccess()) {
-                        // TODO: 2020-01-08 此处反转
                         IUtil.isFaceOpen = info.getResult().equals("1");
                     } else {
                         Log.d("GetFaceOpen", "无法获取人脸识别开关");
@@ -317,6 +318,57 @@ public class AutomaticDetectionActivity extends BaseActivity {
 
             }
         });
+    }
+
+    /**
+     * 获取设备信息
+     */
+    private void getDeviceInfo() {
+        MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
+        // TODO: 2020-01-09 这里的imei号是假的
+        RequestBody body = RequestBody.create(mediaType, new Gson().toJson(new DeviceInfoRequest("868704043712345")));
+        Request request = new Request.Builder()
+                .post(body)
+                .url(HttpConfig.deviceInfo)
+                .build();
+
+        mOkHttpClient.newCall(request)
+                .enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Request request, IOException e) {
+                        System.out.println("设备信息获取失败");
+                    }
+
+                    @Override
+                    public void onResponse(Response response) throws IOException {
+                        try {
+                            DeviceInfoResponse deviceInfo;
+                            if (response != null && response.body() != null) {
+                                String result = response.body().string();
+                                System.out.println("返回结果为："+ result);
+                                if (!result.isEmpty()){
+                                    System.out.println("设备信息获取成功");
+                                    deviceInfo = new Gson().fromJson(result, DeviceInfoResponse.class);
+                                    if (!deviceInfo.getResult().isEmpty()){
+                                        System.out.println("设备信息赋值");
+                                        DeviceInfoResponse.ResultBean bean = deviceInfo.getResult().get(0);
+                                        DeviceParameter.setProviceID(bean.getProvinceId());
+                                        DeviceParameter.setCityID(bean.getCityCountyId());
+                                        DeviceParameter.setCarColor((byte) bean.getPlateColor());
+                                        DeviceParameter.setManufacturerID(bean.getManufacturerId());
+                                        DeviceParameter.setDeviceSerial(bean.getSn().getBytes());
+                                        DeviceParameter.setDeviceType(bean.getModel());
+                                    } else {
+                                        System.out.println("未获取到设备信息");
+                                    }
+                                }
+
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
     }
 
     private void registerGeoFenceReceiver() {
@@ -454,59 +506,20 @@ public class AutomaticDetectionActivity extends BaseActivity {
 
     }
 
-    boolean isStopDownload = false;
     View.OnClickListener myLisener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            Intent intent = new Intent();
+            Intent intent;
             switch (v.getId()) {
-                /*case R.id.bt_auto_detec_learn:
-                    if (checkDeviceValid) {
-                        CommonInfo.setTrainMode(1);
-                        intent.setClass(AutomaticDetectionActivity.this, SelectCurriculumActivity.class);
-                        startActivity(intent);
-                    } else {
-                        toast = Toast.makeText(AutomaticDetectionActivity.this, "设备初始化未完成，请等待初始化", Toast.LENGTH_SHORT);
-                        toast.show();
-                        play("设备初始化未完成，请等待初始化", 500);
-                    }
-                    break;*/
-
-
                 case R.id.bt_auto_detec_examine:
-                    AlertDialog.Builder dialog = new AlertDialog.Builder(AutomaticDetectionActivity.this);
-                    final EditText etPassword = new EditText(AutomaticDetectionActivity.this);
-                    dialog.setView(etPassword);
-                    dialog.setMessage("请输入密码：");
-                    dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            if (etPassword.getText() != null && !etPassword.getText().toString().isEmpty()) {
-                                if (etPassword.getText().toString().equals(IUtil.managerCardPassword)) {
-                                    startActivity(new Intent(AutomaticDetectionActivity.this, SetChangeActivity.class));
-                                    dialog.cancel();
-                                }
-                                else
-                                    Toast.makeText(mContext, "密码错误", Toast.LENGTH_SHORT).show();
-                            } else
-                                Toast.makeText(mContext, "请输入密码", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                    dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.cancel();
-                        }
-                    });
-                    dialog.setCancelable(false);
-                    dialog.show();
+                    startActivity(new Intent(AutomaticDetectionActivity.this, SetChangeActivity.class));
                     break;
                 case R.id.part_two_ll:
                     if (checkDeviceValid) {
-//                        if (!isHadRegister) {
-//                            Toast.makeText(AutomaticDetectionActivity.this, "设备未登录", Toast.LENGTH_SHORT).show();
-//                            return;
-//                        }
+                        if (!isHadRegister) {
+                            Toast.makeText(AutomaticDetectionActivity.this, "设备未登录", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
                         CommonInfo.setCurItem((byte) 2);
                         CommonInfo.setTrainMode(2);
 //                        intent = new Intent(mContext, RainingActivity.class);
@@ -520,10 +533,10 @@ public class AutomaticDetectionActivity extends BaseActivity {
                     break;
                 case R.id.part_three_ll:
                     if (checkDeviceValid) {
-//                        if (!isHadRegister) {
-//                            Toast.makeText(AutomaticDetectionActivity.this, "设备未登录", Toast.LENGTH_SHORT).show();
-//                            return;
-//                        }
+                        if (!isHadRegister) {
+                            Toast.makeText(AutomaticDetectionActivity.this, "设备未登录", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
                         CommonInfo.setCurItem((byte) 3);
                         CommonInfo.setTrainMode(2);
 //                        intent =new Intent(mContext, RainingActivity.class);
@@ -536,8 +549,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
                     }
                     break;
                 case R.id.studytime_search_ll:
-//                    MyToast.show(mContext, "敬请期待");
-                    installApkSilence(AppConfig.UPDATE_VERSION + "/release_update.apk");
+                    MyToast.show(mContext, "敬请期待");
                     break;
                 case R.id.video_study_ll:
                     MyToast.show(mContext, "敬请期待");
@@ -546,7 +558,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
                     MyToast.show(mContext, "敬请期待");
                     break;
             }
-            /******************/
         }
     };
 
@@ -608,55 +619,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
                 .build();
     }
 
-    private class DetectSDCard extends AsyncTask<Void, Integer, Void> {
-        boolean result = false;
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            try {
-                Date now = new Date();
-                long times = now.getTime();
-                String fileName = AppConfig.EXAMINE_RECORD_LIST_DIRECTORY + File.separator + String.valueOf(times) + ".test";
-                File file = new File(fileName);
-                result = file.createNewFile();
-                file.delete();
-                Utils.saveRunningLog("check sdcard successfully");
-            } catch (Exception e) {
-                // Can't create file, SD Card is not available
-                e.printStackTrace();
-                Utils.saveRunningLog("check sdcard failure");
-            } finally {
-                sdcardAvailabilityDetected = true;
-                sdcardAvailable = result;
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            if (result) {
-
-            } else {
-
-            }
-        }
-    }
-
     void initParameter() {
-//        TelephonyManager mTm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-//        String imei = mTm.getDeviceId();
-//        DeviceParameter.setDeviceIMEI(imei);
 
         refreshHand = new Handler(Looper.getMainLooper()) {
             @Override
@@ -689,8 +652,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
                         break;
                     case 999:
                         //第一次点击保存时, this way
-                        TcpClient.getInstance(AutomaticDetectionActivity.this).start();
-                        MessageDefine.isTcpStart = true;
+                        getDeviceInfo();
                         break;
                     case MessageDefine.MSG_PHONE_SEM_CHANGED:
                         switch (Tel.getNetworkType()) {
@@ -745,44 +707,12 @@ public class AutomaticDetectionActivity extends BaseActivity {
                                 break;
                         }
                         break;
-                    case MessageDefine.MSG_AUTOMATIC_UPDATE_SOFTWARE:
-//                        showUpdataDialog();
-                        break;
-                    /*case MessageDefine.MSG_AUTOMATIC_UPDATE_PROGRESS:
-                        int pro = downloadApkProgress.getProgress() + msg.arg1;
-                        downloadApkProgress.setProgress(pro);
-                        if (pro >= downloadApkProgress.getMax()) {
-                            tvDownloadUrl.setText("下载完成");
-                            new Handler().postDelayed(new Runnable() {
-                                public void run() {
-                                    refreshHand.sendEmptyMessage(MessageDefine.MSG_AUTOMATIC_UPDATE_SUCCESS);
-                                    //execute the task
-                                }
-                            }, 2000);
-                        } else {
-//                            float num = (float)downloadApkProgress.getProgress()/(float)downloadApkProgress.getMax();
-//                            int result = (int)(num*100);
-                            String processStr = "进度：" + (downloadApkProgress.getProgress() / 1024) + "kb/" + (downloadApkProgress.getMax() / 1024) + "kb";
-                            tvDownloadUrl.setText(processStr);
-                        }
-                        break;
-                    case MessageDefine.MSG_AUTOMATIC_UPDATE_FAILURE:
-                        tvDownloadUrl.setTextColor(Color.RED);
-                        tvDownloadUrl.setText("下载文件失败！");
-//                        //下载apk失败
-//                        Toast.makeText(getApplicationContext(), "下载新版本失败", 1).show();
-//                        LoginMain();
-
-                        break;*/
                     case MessageDefine.MSG_AUTOMATIC_LATEST_VERSION: //当前版本为最新版本
                         notNewVersionDlgShow(); // 提示当前为最新版本
                         break;
                     case MessageDefine.MSG_GET_UNDATAINFO_ERROR:
                         //服务器超时
                         Toast.makeText(getApplicationContext(), "获取服务器更新信息失败", Toast.LENGTH_SHORT).show();
-                        break;
-                    case MessageDefine.MSG_AUTOMATIC_UPDATE_SUCCESS:
-                        switchShowView(false);
                         break;
                     case MessageDefine.MSG_TCP_THREAD_START:
                         Log.v(TAG, "tcp thread is start");
@@ -796,12 +726,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
                 }
             }
         };
-
-        /*//添加一个升级版本的地址
-        File updateFile = new File(AppConfig.UPDATE_VERSION);
-        if(updateFile.exists() == false){
-            updateFile.mkdirs();
-        }*/
 
         String pathDirectory = AppConfig.PARAMETER_SAVE_PATH;
         String pathFile = pathDirectory + "/DeviceParameter.xml";
@@ -931,12 +855,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
         getFaceOpen();
 
         new selectNUM().start();
-        if (IUtil.IsGPS) {
-//            startService(new Intent(this, GPSService.class));
-        } else {
-
-//            startService(new Intent(this, BDGPSService.class));
-        }
 
         isHadRegister = getSharedPreferences(SharedPreferencesUtil.REGISTER_INFO_FILE, MODE_PRIVATE)
                 .getBoolean(SharedPreferencesUtil.REGISTER_SUCCESS, false);
@@ -974,8 +892,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
 
     @Override
     protected void onStart() {
-        super.onStart();// ATTENTION: This was auto-generated to implement the App Indexing API.
-// See https://g.co/AppIndexing/AndroidStudio for more information.
+        super.onStart();
         client.connect();
         TcpClient.getInstance(this).setHandlerMain(refreshHand);
 
@@ -1005,8 +922,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
 
     @Override
     protected void onStop() {
-        super.onStop();// ATTENTION: This was auto-generated to implement the App Indexing API.
-// See https://g.co/AppIndexing/AndroidStudio for more information.
+        super.onStop();
 
         selectnum = false;
         AppIndex.AppIndexApi.end(client, getIndexApiAction());
@@ -1020,17 +936,7 @@ public class AutomaticDetectionActivity extends BaseActivity {
                 isCheckingSDCard = false;
             }
         }
-        //获取当前程序版本信息
-//        version_code = DeviceParameter.getVerCode(getApplicationContext());
-//        version_name = DeviceParameter.getVerName(getApplicationContext());
-//        DeviceParameter.setSoftVersionCode(version_code);
-//        DeviceParameter.setSoftVersionName(version_name);
-//        if (version_name != null) {
-//            tvSoftwareVersion.setText("Ver:" + DeviceParameter.getVerName(getApplicationContext()));
-//        }
-//        tvDeviceNumber.setText("ID:" + DeviceParameter.getDeviceNumber());
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
+
         client.disconnect();
 
     }
@@ -1108,69 +1014,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
         return super.onKeyDown(keyCode, event);
     }
 
-    int m_newVerCode;
-    String m_newVerName;
-
-    /**
-     * 提示更新新版本
-     */
-    private void doNewVersionUpdate() {
-        int verCode = DeviceParameter.getVerCode(getApplicationContext());
-        String verName = DeviceParameter.getVerName(getApplicationContext());
-
-        String str = "当前版本：" + verName + " Code:" + verCode + " ,发现新版本：" + m_newVerName +
-                " Code:" + m_newVerCode + " ,是否更新？";
-        Dialog dialog = new AlertDialog.Builder(this).setTitle("软件更新").setMessage(str)
-                // 设置内容
-                .setPositiveButton("更新",// 设置确定按钮
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog,
-                                                int which) {
-                                switchShowView(true);
-                                updateSoftware.start();
-//                                Intent intent = new Intent();
-//                                intent.setClass(AutomaticDetectionActivity.this, DownloadApkFileActivity.class);
-//                                Bundle bundle = new Bundle();
-//                                bundle.putString("url", "http://tupian.qqjay.com/u/2013/1127/19_222949_14.jpg");
-//                                intent.putExtras(bundle);
-//                                startActivity(intent);
-//                                m_progressDlg.setTitle("正在下载");
-//                                m_progressDlg.setMessage("请稍候...");
-//                                downFile(Common.UPDATESOFTADDRESS);  //开始下载
-                            }
-                        })
-                .setNegativeButton("暂不更新",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,
-                                                int whichButton) {
-                                // 点击"取消"按钮之后退出程序
-//                                finish();
-                            }
-                        }).create();// 创建
-        // 显示对话框
-        dialog.show();
-    }
-
-    void switchShowView(boolean downloadMode) {
-        if (downloadMode) {
-//            downloadApkProgress.setVisibility(View.VISIBLE);
-//            btDownloadStop.setVisibility(View.VISIBLE);
-//            btDownloadCancel.setVisibility(View.VISIBLE);
-//            tvDownloadUrl.setVisibility(View.VISIBLE);
-
-//            btSelectLearn.setVisibility(View.INVISIBLE);
-//            mSettingLl.setVisibility(View.INVISIBLE);
-        } else {
-//            downloadApkProgress.setVisibility(View.GONE);
-//            btDownloadStop.setVisibility(View.GONE);
-//            btDownloadCancel.setVisibility(View.GONE);
-//            tvDownloadUrl.setVisibility(View.GONE);
-
-//            btSelectLearn.setVisibility(View.VISIBLE);
-//            mSettingLl.setVisibility(View.VISIBLE);
-        }
-    }
 
     /**
      * 提示当前为最新版本
@@ -1273,12 +1116,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
         }
     }
 
-    ;
-
-
-    ///////////////////////////////////////////Update//////////////////////
-
-    UpdateInfo updateInfo;
     String version_name;
     int version_code;
 
@@ -1307,55 +1144,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
     }
 
 
-//    private final BroadcastReceiver broadcastRec = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            File imagepath = null;
-//            String action = intent.getAction();
-//            if (action.equals("android.intent.action.MEDIA_MOUNTED"))// SD
-//            // 卡已经成功挂载
-//            {
-//                imagepath = Environment.getExternalStorageDirectory();// 你的SD卡路径
-//                Toast.makeText(AutomaticDetectionActivity.this, "SD卡加载完成", Toast.LENGTH_SHORT).show();
-//            } else if (action.equals("android.intent.action.MEDIA_REMOVED")// 各种未挂载状态
-//                    || action.equals("android.intent.action.ACTION_MEDIA_UNMOUNTED")
-//                    || action.equals("android.intent.action.ACTION_MEDIA_BAD_REMOVAL")) {
-//                imagepath = Environment.getDataDirectory();// 你的本地路径
-//                Toast.makeText(AutomaticDetectionActivity.this, "SD卡取出", Toast.LENGTH_SHORT).show();
-//            } else if (action.equals(Intent.ACTION_MEDIA_SCANNER_STARTED)) {//开始扫描
-//                Toast.makeText(AutomaticDetectionActivity.this, "开始扫描...", Toast.LENGTH_SHORT).show();
-//            } else if (action.equals(Intent.ACTION_MEDIA_SCANNER_FINISHED)) {//扫描完成
-//                Toast.makeText(AutomaticDetectionActivity.this, "扫描完成...", Toast.LENGTH_SHORT).show();
-//            } else if (action.equals(Intent.ACTION_MEDIA_SHARED)) {//扩展介质的挂载被解除 (unmount)。因为它已经作为 USB 大容量存储被共享
-//                Toast.makeText(AutomaticDetectionActivity.this, " USB 大容量存储被共享...", Toast.LENGTH_SHORT).show();
-//            } else {
-//                Toast.makeText(AutomaticDetectionActivity.this, "SD卡取出...", Toast.LENGTH_SHORT).show();
-//            }
-//            if (imagepath != null) {
-//                Log.i(TAG, "imagepath---" + imagepath);
-//            }
-//            if (!isCheckingSDCard) {
-//                isCheckingSDCard = true;
-//                handler = new Handler();
-//                runnable = new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        //要做的事情
-//                        if (detectSDCardAvailability()) {
-//                            handler.removeCallbacks(runnable);
-//                            isCheckingSDCard = false;
-//                        } else {
-//                            handler.postDelayed(this, 10000);//每隔10秒钟检测一次
-//                        }
-//                    }
-//                };
-//                handler.postDelayed(runnable, 1000);
-//                Log.i(TAG, "restart check sdcard");
-//            }
-//        }
-//    };
-
-
     //time 距离上次语音播报的最小时长ms
     long flagPlayTiem;
 
@@ -1372,51 +1160,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
      * @param path apk路径
      */
     private void installApkSilence(final String path) {
-
-//        ProgressBar progressBar = new ProgressBar(this);
-
-//        new Thread() {
-//            @Override
-//            public void run() {
-//                super.run();
-//                boolean result = false;
-//                DataOutputStream dataOutputStream = null;
-//                BufferedReader errorStream = null;
-//                try {
-//                    // 申请su权限
-//                    Process process = Runtime.getRuntime().exec("su");
-//                    dataOutputStream = new DataOutputStream(process.getOutputStream());
-//                    // 执行pm install命令
-////                    String command = "pm install -r " + path + " && am start -n com.navigation.timerterminal/com.serenegiant.ui.SetActivity\n";
-//                    String command = "pm install -r " + path + "\n";
-//                    dataOutputStream.write(command.getBytes(Charset.forName("utf-8")));
-//                    dataOutputStream.flush();
-////                    dataOutputStream.writeBytes("exit\n");
-////                    dataOutputStream.flush();
-//                    int i = process.waitFor();
-//                    if (i == 0) {
-//                        result = true; // 正确获取root权限
-//                        System.out.println("安装成功");
-//                    } else {
-//                        result = false; // 没有root权限，或者拒绝获取root权限
-//                        System.out.println("安装失败");
-//                    }
-//                } catch (Exception e) {
-//                    Log.e(TAG, e.getMessage(), e);
-//                } finally {
-//                    try {
-//                        if (dataOutputStream != null) {
-//                            dataOutputStream.close();
-//                        }
-//                        if (errorStream != null) {
-//                            errorStream.close();
-//                        }
-//                    } catch (IOException e) {
-//                        Log.e(TAG, e.getMessage(), e);
-//                    }
-//                }
-//            }
-//        }.start();
         new Thread() {
             @Override
             public void run() {
@@ -1426,32 +1169,6 @@ public class AutomaticDetectionActivity extends BaseActivity {
                 Log.d(TAG, "run: " + commandResult.toString());
             }
         }.start();
-    }
-
-    //在调用安装之后调用此方法，用于调出安装界面界面，遮挡安装过程中的Android桌面
-    public static void loadPackageTask(Context ctx) {
-        Log.i("zxj", "loadPackageTask");
-        String packName = "com.cw.transit";
-        //得到PackageManager对象
-        PackageManager pm = ctx.getPackageManager();
-        //得到系统安装的所有程序包的PackageInfo对象
-        List<PackageInfo> packages = pm.getInstalledPackages(0);
-        for (PackageInfo pi : packages) {
-            //列出普通应用
-            if ((pi.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) <= 0) {
-                //if (DEBUG) Log.i(TAG, "Customer app: "+pi.packageName);
-            }
-            //列出系统应用
-            if ((pi.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) > 0) {
-                //if (DEBUG) Log.i(TAG, "System app: "+pi.packageName);
-            }
-            if (packName.equalsIgnoreCase(pi.packageName)) {
-                Intent newIntent = new Intent();
-                newIntent.setClassName(pi.packageName, pi.packageName + ".MainActivity");//MainActivity为系统应用的Activity名称
-                newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(newIntent);
-            }
-        }
     }
 
     /*
@@ -1473,4 +1190,12 @@ public class AutomaticDetectionActivity extends BaseActivity {
     }
 
     private boolean selectnum = false;// 是否开启UI更新上传记录信息
+
+    private String getImei() {
+        TelephonyManager manager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        if (manager != null)
+            return manager.getDeviceId();
+        else
+            return "";
+    }
 }
