@@ -17,6 +17,13 @@ public class IUtil {
     public static boolean WhileB = true;
     public static String Num;
 
+    /**
+     * 管理卡密码
+     */
+    public static final String managerCardPassword = "123456";
+
+    public static boolean isFaceOpen = false;
+
     //指纹模块是否正常
     public static boolean isFingerEnable = false;
     //rfid模块是否正常

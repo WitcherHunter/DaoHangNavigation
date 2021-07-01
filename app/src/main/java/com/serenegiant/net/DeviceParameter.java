@@ -295,6 +295,14 @@ public class DeviceParameter {
         return proviceID;
     }
 
+    public static void setCityID(int cityID) {
+        DeviceParameter.cityID = cityID;
+    }
+
+    public static void setProviceID(int proviceID){
+        DeviceParameter.proviceID = proviceID;
+    }
+
     private static int proviceID;
     private static int cityID;
 
@@ -322,8 +330,16 @@ public class DeviceParameter {
         return manufacturerID;
     }
 
+    public static void setManufacturerID(String manufacturerID) {
+        DeviceParameter.manufacturerID = manufacturerID;
+    }
+
     public static String getDeviceType() {
         return deviceType;
+    }
+
+    public static void setDeviceType(String deviceType) {
+        DeviceParameter.deviceType = deviceType;
     }
 
     private static  String manufacturerID;
@@ -491,28 +507,31 @@ public class DeviceParameter {
         drivingName="驾校";
 
         //loginIP = "114.215.173.239";//检测
-        loginIP="www.gyjponline.com";//39
+        loginIP="218.77.100.37";//39
         //loginIP="203.86.28.37";//公司测试
 //        loginIP="";//测试默认
         //loginPort = 9001;
 //        loginPort=48080;
-        loginPort=8081;
+        loginPort=2346;
 //        loginPort=0;//测试默认
-        loginPlate = "陕AA521学";
+        loginPlate = "湘KE609学";
         //deviceIMEI = "100203086028045";
-        proviceID = 11;
-        cityID = 108;
+        proviceID = 43;
+        cityID = 1322;
 
-        manufacturerID = "J0101";
+//        manufacturerID = "BDMCH";
+        manufacturerID = "";
         //deviceType = "ST-001";
-        deviceType = "V600";
-        deviceSerial = "1001002".getBytes();
+//        deviceType = "V600";
+        deviceType = "";
+//        deviceSerial = "123456".getBytes();
+        deviceSerial = "".getBytes();
 
         studentFingerEn = false;
         coachFingerEn = false;
 //        long serial = Long.valueOf(Build.SERIAL, 16);
-        deviceNumber = "0000013622221234";//测试终端ID
-        carColor = 2;
+        deviceNumber = "0000013745612378";//测试终端ID
+//        carColor = 2;
     }
 
     public static byte[] getTelnetParameter()
